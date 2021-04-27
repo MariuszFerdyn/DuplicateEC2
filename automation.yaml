@@ -1,0 +1,43 @@
+schemaVersion: '0.3'
+mainSteps:
+  - name: createImage
+    action: 'aws:createImage'
+    inputs:
+      InstanceId: i-09469b139c9d610aa
+      ImageName: ToDuplicate
+      NoReboot: true
+  - name: Delete_EC2
+    action: 'aws:invokeLambdaFunction'
+    inputs:
+      InvocationType: RequestResponse
+      FunctionName: Delete_EC2
+  - name: Wait
+    action: 'aws:sleep'
+    inputs:
+      Duration: PT100S
+  - name: launchInstance
+    action: 'aws:runInstances'
+    inputs:
+      InstanceType: t2.2xlarge
+      SecurityGroupIds:
+        - sg-01713b88a69b6b89a
+        - sg-d3df4fba
+      SubnetId: subnet-5e6fce37
+      ImageId: '{{createImage.ImageId}}'
+      PrivateIpAddress: 192.168.30.135
+  - name: createTags
+    action: 'aws:createTags'
+    inputs:
+      ResourceType: EC2
+      ResourceIds: '{{launchInstance.InstanceIds}}'
+      Tags:
+        - Key: Expose
+          Value: LB
+        - Key: Duplicated
+          Value: 'Yes'
+        - Key: Name
+          Value: EC2-b
+  - name: deleteMyImage
+    action: 'aws:deleteImage'
+    inputs:
+      ImageId: '{{createImage.ImageId}}'
